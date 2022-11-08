@@ -11,6 +11,42 @@ import java.util.List;
 import com.bitacademy.guestbook.vo.GuestbookVo;
 
 public class GuestbookDao {
+	public Boolean deleteByNoAndPassword(Long no, String password) {
+		boolean result = false;
+		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		
+		try {
+			conn = getConnection();
+			
+			String sql = "delete from guestbook where no = ? and password = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setLong(1, no);
+			pstmt.setString(2, password);
+			
+			int count = pstmt.executeUpdate();
+			
+			result = count == 1;
+		} catch (SQLException e) {
+			System.out.println("Error:" + e);
+		} finally {
+			try {
+				if(pstmt != null) {
+					pstmt.close();
+				}
+				
+				if(conn != null) {
+					conn.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return result;		
+	}
+	
 	public Boolean insert(GuestbookVo vo) {
 		boolean result = false;
 		
@@ -18,10 +54,7 @@ public class GuestbookDao {
 		PreparedStatement pstmt = null;
 		
 		try {
-			Class.forName("org.mariadb.jdbc.Driver");
-			
-			String url = "jdbc:mysql://127.0.0.1:3306/webdb?charset=utf8";
-			conn = DriverManager.getConnection(url, "webdb", "webdb");
+			conn = getConnection();
 			
 			String sql = "insert into guestbook values(null, ?, ?, ?, now())";
 			pstmt = conn.prepareStatement(sql);
@@ -34,8 +67,6 @@ public class GuestbookDao {
 			//5. 결과 처리
 			result = count == 1;
 			
-		} catch (ClassNotFoundException e) {
-			System.out.println("드라이버 로딩 실패:" + e);
 		} catch (SQLException e) {
 			System.out.println("Error:" + e);
 		} finally {
@@ -63,10 +94,7 @@ public class GuestbookDao {
 		ResultSet rs = null;
 		
 		try {
-			Class.forName("org.mariadb.jdbc.Driver");
-			
-			String url = "jdbc:mysql://127.0.0.1:3306/webdb?charset=utf8";
-			conn = DriverManager.getConnection(url, "webdb", "webdb");
+			conn = getConnection();
 			
 			String sql =
 				"    select no, name, contents, date_format(reg_date, '%Y/%m/%d %H:%i:%s')" + 
@@ -74,7 +102,7 @@ public class GuestbookDao {
 				"  order by reg_date desc";
 			pstmt = conn.prepareStatement(sql);
 			
-			rs = pstmt.executeQuery(sql);
+			rs = pstmt.executeQuery();
 			while(rs.next()) {
 				Long no = rs.getLong(1);
 				String name = rs.getString(2);
@@ -90,8 +118,6 @@ public class GuestbookDao {
 				result.add(vo);
 			}
 			
-		} catch (ClassNotFoundException e) {
-			System.out.println("드라이버 로딩 실패:" + e);
 		} catch (SQLException e) {
 			System.out.println("Error:" + e);
 		} finally {
@@ -113,5 +139,20 @@ public class GuestbookDao {
 		}		
 		
 		return result;
+	}
+	
+	private Connection getConnection() throws SQLException {
+		Connection conn = null;
+
+		try {
+			Class.forName("org.mariadb.jdbc.Driver");
+			
+			String url = "jdbc:mysql://127.0.0.1:3306/webdb?charset=utf8";
+			conn = DriverManager.getConnection(url, "webdb", "webdb");
+		} catch (ClassNotFoundException e) {
+			System.out.println("드라이버 로딩 실패:" + e);
+		} 
+		
+		return conn;
 	}
 }
